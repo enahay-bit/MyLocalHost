@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <!-- タスクトレイ（NotifyIcon）のためだけに WinForms を使う -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>Resources\app.ico</ApplicationIcon>
+    <Product>MyLocalHost</Product>
+    <Version>1.0.0</Version>
+    <Company>有限会社エナージ</Company>
+    <Authors>Enarge</Authors>
+    <Copyright>Copyright (c) 2026 有限会社エナージ</Copyright>
+    <Description>ローカルの静的サイトをワンクリックで確認する Windows 用の小さなサーバー</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- WPF と名前がぶつかる（MessageBox, Application など）ので、WinForms の暗黙の using は外す -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 静的ファイル配信に ASP.NET Core（Kestrel）を使う -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\app.ico" />
+  </ItemGroup>
+
+</Project>

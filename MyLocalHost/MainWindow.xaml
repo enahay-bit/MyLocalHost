@@ -1,0 +1,180 @@
+﻿<Window x:Class="MyLocalHost.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:MyLocalHost.ViewModels"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
+        Title="MyLocalHost" Height="580" Width="880" MinWidth="640" MinHeight="360"
+        Icon="/Resources/app.ico"
+        FontFamily="Yu Gothic UI, Segoe UI" FontSize="13"
+        Background="{DynamicResource Brush.WindowBg}" Foreground="{DynamicResource Brush.Text}">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+        <Style x:Key="ToolButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Padding" Value="12,4" />
+            <Setter Property="Margin" Value="4,0,0,0" />
+            <Setter Property="MinWidth" Value="32" />
+        </Style>
+    </Window.Resources>
+
+    <DockPanel>
+        <!-- 上部ツールバー -->
+        <Border DockPanel.Dock="Top" Background="{DynamicResource Brush.Panel}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,0,0,1" Padding="12,8">
+            <DockPanel>
+                <TextBlock Text="ローカルサイト" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="＋ 追加" Style="{StaticResource ToolButton}" Command="{Binding AddCommand}"
+                            Margin="0,0,12,0" ToolTip="サイトを登録します" />
+                    <Button Content="全停止" Style="{StaticResource ToolButton}" Command="{Binding StopAllCommand}"
+                            ToolTip="起動中のサーバーをすべて止めます" />
+                    <Button Content="再読み込み" Style="{StaticResource ToolButton}" Command="{Binding ReloadCommand}"
+                            ToolTip="sites.json を読み直します（全停止中のみ）" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- 下部：設定ファイルの場所 -->
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource Brush.Panel}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,1,0,0" Padding="12,4">
+            <DockPanel>
+                <CheckBox DockPanel.Dock="Right" Content="最小化したらタスクトレイに入れる" VerticalAlignment="Center"
+                          Margin="12,0,0,0" IsChecked="{Binding MinimizeToTray}" />
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                    <TextBlock Text="テーマ" VerticalAlignment="Center" Margin="0,0,6,0"
+                               Foreground="{DynamicResource Brush.TextMuted}" />
+                    <ComboBox ItemsSource="{Binding ThemeOptions}" SelectedValuePath="Key" DisplayMemberPath="Value"
+                              SelectedValue="{Binding Theme}" MinWidth="150" VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock Foreground="{DynamicResource Brush.TextMuted}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center">
+                    <Run Text="設定: " />
+                    <Hyperlink Command="{Binding OpenSettingsFolderCommand}" ToolTip="保存フォルダを開く"
+                               Foreground="{DynamicResource Brush.Link}">
+                        <Run Text="{Binding SettingsPath, Mode=OneWay}" />
+                    </Hyperlink>
+                </TextBlock>
+            </DockPanel>
+        </Border>
+
+        <!-- ログ -->
+        <Expander DockPanel.Dock="Bottom" IsExpanded="True" Margin="8,0,8,6">
+            <Expander.Header>
+                <DockPanel Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Expander}}">
+                    <TextBlock Text="ログ" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <Button DockPanel.Dock="Right" Content="クリア" Padding="8,0" Margin="0,0,32,0"
+                            HorizontalAlignment="Right" Command="{Binding ClearLogCommand}" />
+                </DockPanel>
+            </Expander.Header>
+            <ListBox x:Name="LogList" ItemsSource="{Binding Logs}" Height="150" Margin="0,4,0,0"
+                     FontFamily="Consolas, Yu Gothic UI" FontSize="12" BorderBrush="{DynamicResource Brush.Border}"
+                     VirtualizingPanel.IsVirtualizing="True" ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                <ListBox.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:LogEntry}">
+                        <TextBlock x:Name="Line">
+                            <Run Text="{Binding TimeText, Mode=OneWay}" Foreground="{DynamicResource Brush.TextFaint}" />
+                            <Run Text="{Binding Site, Mode=OneWay}" Foreground="{DynamicResource Brush.TextSub}" />
+                            <Run Text="{Binding Text, Mode=OneWay}" />
+                        </TextBlock>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding IsError}" Value="True">
+                                <Setter TargetName="Line" Property="Foreground" Value="{DynamicResource Brush.Error}" />
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Expander>
+
+        <!-- サイト一覧 -->
+        <Grid>
+        <!-- 1件もないときの案内 -->
+        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" LineHeight="22"
+                   Foreground="{DynamicResource Brush.TextMuted}"
+                   Visibility="{Binding HasNoSites, Converter={StaticResource BoolToVisibility}}">
+            <Run Text="まだサイトが登録されていません。" FontSize="15" FontWeight="SemiBold" /><LineBreak />
+            <Run Text="右上の「＋ 追加」から、確認したいフォルダとポートを登録してください。" />
+        </TextBlock>
+        <ListBox ItemsSource="{Binding Sites}" BorderThickness="0" Background="Transparent" Padding="8"
+                 HorizontalContentAlignment="Stretch"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="Margin" Value="0,0,0,6" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListBoxItem">
+                                <ContentPresenter />
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListBox.ItemContainerStyle>
+
+            <ListBox.ItemTemplate>
+                <DataTemplate DataType="{x:Type vm:SiteViewModel}">
+                    <Border Background="{DynamicResource Brush.Panel}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="6" Padding="12,8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <!-- 状態ランプ -->
+                            <Ellipse x:Name="Lamp" Width="12" Height="12" Margin="0,0,12,0" VerticalAlignment="Center"
+                                     Fill="{DynamicResource Brush.LampOff}" ToolTip="{Binding StatusText}" />
+
+                            <!-- 名前・URL・フォルダ -->
+                            <StackPanel Grid.Column="1">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" />
+                                    <TextBlock Text="{Binding Port, StringFormat=':{0}'}" Foreground="{DynamicResource Brush.TextSub}" Margin="8,1,0,0" />
+                                    <TextBlock x:Name="StatusLabel" Text="{Binding StatusText}" Foreground="{DynamicResource Brush.TextFaint}" Margin="12,1,0,0" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding Url}" Foreground="{DynamicResource Brush.Link}" Margin="0,2,0,0" />
+                                <TextBlock Text="{Binding Folder}" Foreground="{DynamicResource Brush.TextFaint}" FontSize="12" Margin="0,1,0,0"
+                                           TextTrimming="CharacterEllipsis" ToolTip="{Binding Folder}" />
+                            </StackPanel>
+
+                            <!-- 操作ボタン -->
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button x:Name="StartButton" Content="▶ 起動" Style="{StaticResource ToolButton}" MinWidth="72"
+                                        Command="{Binding StartCommand}" ToolTip="サーバーを起動してブラウザで開く" />
+                                <Button x:Name="StopButton" Content="■ 停止" Style="{StaticResource ToolButton}" MinWidth="72"
+                                        Command="{Binding StopCommand}" Visibility="Collapsed" />
+                                <Button Content="開く" Style="{StaticResource ToolButton}"
+                                        Command="{Binding OpenBrowserCommand}" ToolTip="ブラウザで開く" />
+                                <Button Content="フォルダ" Style="{StaticResource ToolButton}"
+                                        Command="{Binding DataContext.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                        CommandParameter="{Binding}" ToolTip="エクスプローラーで開く" />
+                                <Button Content="編集" Style="{StaticResource ToolButton}"
+                                        Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                        CommandParameter="{Binding}" ToolTip="編集（停止中のみ）"
+                                        ToolTipService.ShowOnDisabled="True" />
+                                <Button Content="削除" Style="{StaticResource ToolButton}"
+                                        Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                        CommandParameter="{Binding}" ToolTip="一覧から削除（停止中のみ）"
+                                        ToolTipService.ShowOnDisabled="True" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding Status}" Value="{x:Static vm:SiteStatus.Running}">
+                            <Setter TargetName="Lamp" Property="Fill" Value="{DynamicResource Brush.LampOn}" />
+                            <Setter TargetName="StatusLabel" Property="Foreground" Value="{DynamicResource Brush.OkText}" />
+                            <Setter TargetName="StartButton" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="StopButton" Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Status}" Value="{x:Static vm:SiteStatus.Warning}">
+                            <Setter TargetName="Lamp" Property="Fill" Value="{DynamicResource Brush.LampWarn}" />
+                            <Setter TargetName="StatusLabel" Property="Foreground" Value="{DynamicResource Brush.WarnText}" />
+                        </DataTrigger>
+                    </DataTemplate.Triggers>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        </Grid>
+    </DockPanel>
+</Window>

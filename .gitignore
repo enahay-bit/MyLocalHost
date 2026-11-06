@@ -1,0 +1,20 @@
+# ビルド結果
+bin/
+obj/
+publish/
+release/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# 各 PC の設定（登録したサイトのパスが入るので共有しない）
+sites.json
+sites.json.tmp
+
+# Python
+__pycache__/
+
+# Claude Code のローカル設定
+.claude/
