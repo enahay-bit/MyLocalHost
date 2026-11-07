@@ -28,11 +28,17 @@ public partial class MainWindow : Window
         portTimer.Start();
         Activated += (_, _) => _vm.RefreshPortStatus();
 
-        // ログは新しい行が見えるように一番下までスクロールする
+        // ログは新しい行が見えるように一番下までスクロールする。
+        // この通知はリスト自身より先に届くことがあり、その場でスクロールすると
+        // リストの中身と件数が食い違って落ちるので、リストが追いついてから行う。
         _vm.Logs.CollectionChanged += (_, e) =>
         {
-            if (e.Action == NotifyCollectionChangedAction.Add && _vm.Logs.Count > 0)
-                LogList.ScrollIntoView(_vm.Logs[^1]);
+            if (e.Action != NotifyCollectionChangedAction.Add) return;
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
+            {
+                if (_vm.Logs.Count > 0)
+                    LogList.ScrollIntoView(_vm.Logs[^1]);
+            });
         };
 
         // タスクトレイ
